@@ -1,6 +1,3 @@
-#################
-### Hallmarks ###
-#################
 library(tidyr)
 library(stats)
 library(dplyr)
