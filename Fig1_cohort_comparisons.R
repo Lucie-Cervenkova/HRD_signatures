@@ -1,7 +1,5 @@
 library(dplyr)
 library(ggplot2)
-library(stringr)
-library(rlang)
 library(ggpubr)
 
 sigs_cols <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "Peng" = "HRD_signature_Peng", "Beinse" =  "HRD_Beinse_scaled", "Zhuang" = "HRD_Zhuang_scaled")
@@ -70,7 +68,7 @@ for (sig in names(sigs_cols)) {
 # plots[["Walens"]]
 
 plots <- ggarrange(plotlist = plots, ncol = 3, nrow = 2)
-ggsave(plots, file = "results/figs/HRD/Fig1_cohort_comparisons.png", width = 16, height = 10)
+ggsave(plots, file = "results/figs/HRD/Fig1_cohort_comparisons.pdf", width = 16, height = 10)
 
 
 ### Get number of samples above TNBC median for each signature

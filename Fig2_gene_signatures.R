@@ -3,54 +3,49 @@
 #################
 library(tidyr)
 library(stats)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
 
-merged_data <- readRDS("data/HRD_signatures/neoALTTO_meta.rds")
+sigs_HRD <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "Peng" = "HRD_signature_Peng", "Beinse" =  "HRD_Beinse_scaled", "Zhuang" = "HRD_Zhuang_scaled")
 
-signatures <- c("BRCA1ness", "HRD_signature_Peng", "HRD_signature_Walens", "HRD_Beinse_scaled", "HRD_Zhuang_scaled")
-hallmark_cols <- grep("^HALLMARK", names(merged_data), value = TRUE)  # Detect hallmark columns
-# hallmark_cols <- signatures
+neoaltto <- readRDS("data/HRD_signatures/neoALTTO_meta.rds")
+altto <- readRDS("data/HRD_signatures/ALTTO_meta.rds")
+calgb <- readRDS("data/HRD_signatures/CALGB_meta.rds")
+tnbc <- readRDS("data/HRD_signatures/TNBC_meta.rds")
+
+hallmark_cols <- grep("^HALLMARK", names(neoaltto), value = TRUE)  # Detect hallmark columns
+other_sig_cols <- c("ESR1_gene", "ERBB2_gene",grep("*PMID*", names(neoaltto), value = TRUE))
+
+merged_data <- bind_rows(
+  altto %>% mutate(study = "ALTTO") %>% select(study, all_of(c(hallmark_cols, other_sig_cols, unlist(sigs_HRD)))),
+  neoaltto %>% mutate(study = "NeoALTTO") %>% select(study, all_of(c(hallmark_cols, other_sig_cols, unlist(sigs_HRD)))),
+  calgb %>% mutate(study = "CALGB") %>% select(study, all_of(c(hallmark_cols, other_sig_cols, unlist(sigs_HRD)))),
+)
+
+#################
+### Hallmarks ###
+#################
 
 cor_results <- data.frame()
 pval_results <- data.frame()
 
-# stats_corr_df <- data.frame(hallmark = character(), HRD_signature = character(), correlation = numeric(), p_value = numeric(), CI.low = numeric(), CI.high = numeric())
-
 for (hallmark in hallmark_cols) {
-  for (signature in signatures) {
+  for (signature in names(sigs_HRD)) {
     cor_test <- cor.test(merged_data[[signature]], merged_data[[hallmark]], method = "pearson")  # Change to "spearman" if needed
-    cor_results <- rbind(cor_results, data.frame(Hallmark = hallmark, Signature = signature, Correlation = cor_test$estimate))
-    pval_results <- rbind(pval_results, data.frame(Hallmark = hallmark, Signature = signature, PValue = cor_test$p.value))
-
-    # stats_corr_df <- rbind(stats_corr_df, data.frame(hallmark = hallmark, HRD_signature = signature, correlation = cor_test$estimate, p_value = cor_test$p.value, CI.low = cor_test$conf.int[1], CI.high = cor_test$conf.int[2]))
+    cor_results <- rbind(cor_results, data.frame(Signature = hallmark, HRD = signature, Correlation = cor_test$estimate))
+    pval_results <- rbind(pval_results, data.frame(Signature = hallmark, HRD = signature, PValue = cor_test$p.value))
   }
 }
-
-# corr_df <- stats_corr_df %>% filter(abs(correlation) >= 0.5 & p_value < 0.05)
-
-# altto_df <- corr_df
-
-# ### Save to Excel file
-# library(openxlsx)
-
-# # create new workbook
-# wb <- createWorkbook()
-
-# addWorksheet(wb, "ALTTO")
-# writeData(wb, sheet = "ALTTO", x = altto_df)
-
-
-# saveWorkbook(wb, "results/HRD/correlations.xlsx", overwrite = TRUE)
-
-
 
 pval_results <- pval_results %>%
   mutate(Adj_PValue = p.adjust(PValue, method = "fdr"))
 
 df_plot <- cor_results %>%
-  left_join(pval_results, by = c("Hallmark", "Signature")) %>%
+  left_join(pval_results, by = c("Signature", "HRD")) %>%
   mutate(Size = -log10(Adj_PValue + 1e-10))  # Avoid log(0)
 
-df_plot <- df_plot %>% mutate(Hallmark = gsub("^HALLMARK_", "", Hallmark))  # Remove "HALLMARK_" prefix
+df_plot <- df_plot %>% mutate(Signature = gsub("^HALLMARK_", "", Signature))  # Remove "HALLMARK_" prefix
 
 ordered_pathways <- c(
   "E2F_TARGETS", "MYC_TARGETS_V1", "MYC_TARGETS_V2", "G2M_CHECKPOINT", "MITOTIC_SPINDLE", "KRAS_SIGNALING",
@@ -68,43 +63,34 @@ ordered_pathways <- c(
   "ADIPOGENESIS", "APICAL_JUNCTION", "APICAL_SURFACE", "PROTEIN_SECRETION", "MYOGENESIS"
 )
 
-df_plot <- df_plot %>% filter(Hallmark %in% ordered_pathways)
+df_plot <- df_plot %>% filter(Signature %in% ordered_pathways)
 
-df_plot <- df_plot %>% mutate(Signature = ifelse(Signature == "HRD_signature_Peng", "Peng et al.",
-                                            ifelse(Signature == "HRD_signature_Walens", "Walens et al.",
-                                              ifelse(Signature == "HRD_Beinse_scaled", "Beinse et al.",
-                                                ifelse(Signature == "HRD_Zhuang_scaled", "Zhuang et al.", "BRCA1ness")))))
-lvls.sigs <- c("BRCA1ness", "Peng et al.", "Walens et al.", "Beinse et al.", "Zhuang et al.")
-
-p <- ggplot(df_plot, aes(x = Signature, y = Hallmark, size = Size, color = Correlation)) +
+p1 <- ggplot(df_plot, aes(x = factor(HRD, levels = c("BRCA1ness", "Walens", "Peng", "Beinse", "Zhuang")), y = factor(Signature, levels = ordered_pathways), size = Size, color = Correlation)) +
   geom_point() +
-  scale_color_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
-  scale_size(range = c(2, 10)) +  
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  scale_size(range = c(1,8)) + 
+  labs(size = "-log10(FDR)", color = "Pearson correlation") +
   theme_light() +
+  guides(
+    size = guide_legend(order = 1),
+    color = guide_colorbar(order = 2)
+  ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        legend.position = "bottom",
-        legend.justification = "center",
-        legend.box = "vertical") +
-  guides(
-    size = guide_legend(title = "-log10(p-adj)", order = 2),
-    color = guide_colorbar(title = "Correlation", order = 3, barwidth = 12, barheight = 1) 
-  )      
-p
-ggsave(p, file = "results/figs/HRD/CALGB/hallmarks_dotplot.png", width = 7, height = 15)
+        legend.position = "right",
+  ) 
+
+ggsave(p1, file = "results/figs/HRD/Fig2a_hallmarks_dotplot.pdf", width = 7, height = 12)
 
 ######################
 ## Other signatures ##
 ######################
-## Fix for each cohort
-sigs_cols <- colnames(merged_data)[107:155]
-
 cor_results <- data.frame()
 pval_results <- data.frame()
 
-for (sig in sigs_cols) {
-  for (signature in signatures) {
+for (sig in other_sig_cols) {
+  for (signature in names(sigs_HRD)) {
     cor_test <- cor.test(merged_data[[signature]], merged_data[[sig]], method = "pearson")  # Change to "spearman" if needed
     cor_results <- rbind(cor_results, data.frame(Signature = sig, HRD = signature, Correlation = cor_test$estimate))
     pval_results <- rbind(pval_results, data.frame(Signature = sig, HRD = signature, PValue = cor_test$p.value))
@@ -118,28 +104,24 @@ df_plot <- cor_results %>%
   left_join(pval_results, by = c("Signature", "HRD")) %>%
   mutate(Size = -log10(Adj_PValue + 1e-10))  # Avoid log(0)
 
-df_plot <- df_plot %>% mutate(HRD = ifelse(HRD == "HRD_signature_Peng", "Peng et al.",
-                                            ifelse(HRD == "HRD_signature_Walens", "Walens et al.",
-                                              ifelse(HRD == "HRD_Beinse_scaled", "Beinse et al.",
-                                                ifelse(HRD == "HRD_Zhuang_scaled", "Zhuang et al.", "BRCA1ness")))))
-lvls.sigs <- c("BRCA1ness", "Peng et al.", "Walens et al.", "Beinse et al.", "Zhuang et al.")
 df_plot <- df_plot %>% mutate(Signature = gsub("_PMID.*", "", Signature))
 
-p <- ggplot(df_plot, aes(x = factor(HRD, lvls.sigs), y = factor(Signature, levels = unique(df_plot$Signature)), size = Size, color = Correlation)) +
+p2 <- ggplot(df_plot, aes(x = factor(HRD, c("BRCA1ness", "Walens", "Peng", "Beinse", "Zhuang")), y = factor(Signature, levels = unique(df_plot$Signature)), size = Size, color = Correlation)) +
   geom_point() +
-  scale_color_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
-  scale_size(range = c(2, 8)) +  
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  scale_size(range = c(1, 8)) + 
+  labs(size = "-log10(FDR)", color = "Pearson correlation") + 
+  guides(
+    size = guide_legend(order = 1),
+    color = guide_colorbar(order = 2)
+  ) +
   theme_light() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        legend.position = "bottom",
-        legend.justification = "center",
-        legend.box = "vertical") +
-  guides(
-    size = guide_legend(title = "-log10(p-adj)", order = 2),
-    color = guide_colorbar(title = "Correlation", order = 3, barwidth = 12, barheight = 1) 
-  )      
-p
-ggsave(p, file = "results/figs/HRD/CALGB/signatures_dotplot.png", width = 7, height = 15)
+        legend.position = "right")   
 
+ggsave(p2, file = "results/figs/HRD/Fig2b_signatures_dotplot.pdf", width = 7, height = 12)
+
+p_both <- ggarrange(p1, p2, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+ggsave(p_both, file = "results/figs/HRD/Fig2_gene_signatures_dotplots.pdf", width = 13, height = 12)
