@@ -84,3 +84,102 @@ make_forest_plot <- function(data, signatures, surv_obj = NULL, time = NULL, eve
     return(p)
   }
 }
+
+make_multi_group_forest_plot <- function(data,
+                             signatures,
+                             group_var,
+                             group_levels,
+                             surv_time    = NULL,
+                             surv_event   = NULL,
+                             covariates   = NULL,
+                             signatures_labs = NULL,
+                             pos_lab      = NULL,
+                             neg_lab      = NULL,
+                             binary       = FALSE,
+                             observed_variable = NULL,
+                             title        = "") {
+  
+  results <- lapply(group_levels, function(g) {
+    df_g <- filter(data, !!sym(group_var) == g)
+    
+    lapply(signatures, function(sig) {
+      if (binary) {
+        # logistic
+        f_str <- paste(observed_variable, "~", sig,
+                       if (!is.null(covariates)) paste("+", paste(covariates, collapse = " + ")) else "")
+        mdl <- glm(as.formula(f_str), data = df_g, family = binomial)
+      } else {
+        # Cox
+        if (!is.null(surv_time) && !is.null(surv_event)) {
+          surv_obj <- Surv(time = df_g[[surv_time]], event = df_g[[surv_event]])
+        }
+        f_str <- paste("surv_obj ~", sig,
+                       if (!is.null(covariates)) paste("+", paste(covariates, collapse = " + ")) else "")
+        mdl <- coxph(as.formula(f_str), data = df_g)
+      }
+      
+      broom::tidy(mdl, exponentiate = TRUE, conf.int = TRUE) %>%
+        filter(term == sig) %>%
+        transmute(
+          signature = sig,
+          estimate  = estimate,
+          conf.low  = conf.low,
+          conf.high = conf.high,
+          p.value   = p.value,
+          cohort    = g
+        )
+    }) %>% bind_rows()
+  }) %>% bind_rows()
+  
+  dodge_width <- 0.7
+  n_groups <- length(group_levels)
+  palette  <- RColorBrewer::brewer.pal(n = n_groups, name = "Accent")
+  
+  if (is.null(pos_lab)) pos_lab <- if (binary) "Favors case" else "Worse outcome"
+  if (is.null(neg_lab)) neg_lab <- if (binary) "Favors control" else "Better outcome"
+  
+  ggplot(results,
+         aes(x = signature,
+             y = estimate,
+             ymin = conf.low,
+             ymax = conf.high,
+             color = factor(cohort, levels = group_levels))) +
+    geom_pointrange(position = position_dodge(dodge_width), size = 1, shape = 15) +
+    geom_vline(
+       xintercept = seq(1.5, length(signatures) - 0.5, by = 1),
+       color      = "grey",
+       size       = 0.3
+     ) +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    coord_flip() +
+    scale_y_log10() +
+    scale_color_manual(values = palette, name = "Treatment arm") +
+    # scale_shape_manual(values = shapes, name = group_var) +
+    scale_x_discrete(labels = signatures_labs) +
+    # annotations at the top for directionality
+    annotate("text",
+             x = length(signatures) + 0.5,
+             y = 1 / 1.15,
+             label = neg_lab,
+             hjust = 1, size = 4) +
+    annotate("text",
+             x = length(signatures) + 0.5,
+             y = 1 * 1.15,
+             label = pos_lab,
+             hjust = 0, size = 4) +
+    labs(
+      x     = NULL,
+      y     = ifelse(binary, "Odds Ratios", "Hazard Ratios"),
+      title = title
+    ) +
+    guides(
+    color = guide_legend(
+      title.position = "top",
+      title.hjust     = 0.5)) +
+    theme_classic(base_size = 14) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      legend.position = "bottom",
+      legend.box = "vertical"
+    )
+}

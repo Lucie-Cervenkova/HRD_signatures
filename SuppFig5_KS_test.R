@@ -62,20 +62,22 @@ for (i in seq_len(nrow(res_ks))) { # loop through KS test results df rows
   df <- merged_data %>% filter(study %in% c(res_ks[i,"study1"], res_ks[i,"study2"]))
   sig_col <- res_ks[i,"signature"]
 
-  p <- ggplot(df, aes(x = df[[sig_col]], fill = study, color = study)) +
+  p <- ggplot(df, aes(x = !!sym(sig_col), fill = study, color = study)) +
     geom_density(alpha = 0.4, linewidth = 1) +
     labs(
-        color = "Study",
-        fill = "Study",
         title = sig_col,
-        subtitle = paste0("Kolmogorov-Smirnov, p = ", round(res_ks[i,"p_value"], 4))
+        subtitle = paste0("p = ", round(res_ks[i,"p_value"], 3))
     ) +
-    scale_fill_manual(values = study_colors) +
-    scale_color_manual(values = study_colors) +
+    scale_fill_manual(values = study_colors[unique(df$study)], drop = FALSE) +
+    scale_color_manual(values = study_colors[unique(df$study)], drop = FALSE) +
     theme_classic(base_size = 14) +
-    theme(axis.title = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 16))
+    theme(axis.title = element_blank(),
+          plot.title = element_text(face = "bold", hjust = 0.5, size = 16), 
+          legend.position = "bottom",
+          legend.title = element_blank())
   dist_plots[[paste0(sig_col, "_", res_ks[i,"comparison"])]] <- p
-  ggsave(p, file = paste0("results/figs/HRD/KS_test/", sig_col, "_", res_ks[i,"comparison"], ".pdf"), width = 8, height = 6)
+  # ggsave(p, file = paste0("results/figs/HRD/KS_test/", sig_col, "_", res_ks[i,"comparison"], ".pdf"), width = 8, height = 6)
 }
 
-ggarrange(plotlist = unlist(dist_plots), ncol = 4, nrow = 2)
+p <- ggarrange(plotlist = dist_plots, ncol = 4, nrow = 2)
+ggsave(p, file = "results/figs/HRD/SuppFig5_KS_test.pdf", width = 12, height = 8)
