@@ -78,7 +78,13 @@ make_forest_plot <- function(data, signatures, surv_obj = NULL, time = NULL, eve
         theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 16))
   
   if(return_object){
-    return(list(plot = p, data = results))
+    df <- results %>% select(signature, estimate, p.value, p.adj)
+    df$clinical_variable <- observed_variable
+    df <- df %>% select(clinical_variable, everything())
+    df$signature <- signatures_labs
+    colnames(df) <- c("clinical_variable", "signature", "odds_ratio", "p_value", "p_adj")
+
+    return(list(plot = p, data = df))
   }
   else {
     return(p)
