@@ -7,7 +7,7 @@
   - SuppFig. 3: pCR stratified by HR status (Fig3_pCR_and_outcomes)
   - SuppFig. 4: pCR stratified by treatment arms (Fig3_pCR_and_outcomes)
   - SuppFig. 5: Kolmogorov-Smironov tests distribution plots (SuppFig5_KS_test.R)
-
+ (TO DO? SuppFig. 6: Outlier characterstics (donuts))
 ### Tables directory
  - Table 2: Clinical variables (Table2_clinical_vars.R)
- + SuppFig. 6: Outlier characterstics (donuts)
+ - Table 3: Subtypes (Table3_subtypes.R)
