@@ -2115,16 +2115,3 @@ clinical_variable_boxplot(merged_all, clinical_variable = "study", variable_lab 
 clinical_variable_boxplot(merged_all, clinical_variable = "study", variable_lab = "Dataset", signature = "HRD_signature_Walens", signature_lab = "Walens et al.",cohort_name = "all")
 clinical_variable_boxplot(merged_all, clinical_variable = "study", variable_lab = "Dataset", signature = "HRD_Beinse_scaled", signature_lab = "Beinse et al.",cohort_name = "all")
 clinical_variable_boxplot(merged_all, clinical_variable = "study", variable_lab = "Dataset", signature = "HRD_Zhuang_scaled", signature_lab = "Zhuang et al.",cohort_name = "all")
-
-
-
-
-
-##### REMOVE LATER
-## Mevalonate pathway signatures = from WikiPathways 2024 (Human)
-# 1. Mevalonate Arm Of Cholesterol Biosynthesis Pathway WP4190
-# 2. Mevalonate Pathway WP3963
-sigs_mevalonate <- list(
-  "Mevalonate Arm Of Cholesterol Biosynthesis Pathway WP4190" = c("FDPS","IDI1","MVK","IDI2","HMGCS1","GGPS1","ACAT1","HMGCR","ACAT2","HMGCL","PMVK","MVD","FDFT1"),
-  "Mevalonate Pathway WP3963" = c("FDPS", "MVK", "PMVK", "HMGCS1", "HMGCR", "MVD", "ACAT2"))
-saveRDS(sigs_mevalonate, "data/sigs_mevalonate.rds")  

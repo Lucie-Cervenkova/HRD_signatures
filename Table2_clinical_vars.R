@@ -1,6 +1,7 @@
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+library(xlsx)
 
 sigs_HRD <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "Peng" = "HRD_signature_Peng", "Beinse" =  "HRD_Beinse_scaled", "Zhuang" = "HRD_Zhuang_scaled")
 
@@ -278,4 +279,5 @@ altto_clin_var$study <- "ALTTO"
 
 clin_var_df <- rbind(neoaltto_clin_var, calgb_clin_var, altto_clin_var)
 View(clin_var_df)
-write.csv(clin_var_df, "results/figs/HRD/Table2_clinical_variables.csv", row.names = FALSE)
+# write.csv(clin_var_df, "results/figs/HRD/Table2_clinical_variables.csv", row.names = FALSE)
+write.xlsx(clin_var_df, file = "results/figs/HRD/Table2_clinical_variables.xlsx")
