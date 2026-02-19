@@ -62,17 +62,24 @@ for (i in seq_len(nrow(res_ks))) { # loop through KS test results df rows
   df <- merged_data %>% filter(study %in% c(res_ks[i,"study1"], res_ks[i,"study2"]))
   sig_col <- res_ks[i,"signature"]
 
+  subtitle_text <- if (res_ks[i,"p_value"] < 0.001) {
+  "p < 0.001"
+  } else {
+    paste0("p = ", round(res_ks[i,"p_value"], 3))
+  } 
+
   p <- ggplot(df, aes(x = !!sym(sig_col), fill = study, color = study)) +
     geom_density(alpha = 0.4, linewidth = 1) +
     labs(
         title = sig_col,
-        subtitle = paste0("p = ", round(res_ks[i,"p_value"], 3))
+        subtitle = subtitle_text
     ) +
     scale_fill_manual(values = study_colors[unique(df$study)], drop = FALSE) +
     scale_color_manual(values = study_colors[unique(df$study)], drop = FALSE) +
-    theme_classic(base_size = 14) +
+    theme_classic(base_size = 16) +
     theme(axis.title = element_blank(),
-          plot.title = element_text(face = "bold", hjust = 0.5, size = 16), 
+          plot.title = element_text(face = "bold", hjust = 0.5, size = 18), 
+          plot.subtitle = element_markdown(),
           legend.position = "bottom",
           legend.title = element_blank())
   dist_plots[[paste0(sig_col, "_", res_ks[i,"comparison"])]] <- p

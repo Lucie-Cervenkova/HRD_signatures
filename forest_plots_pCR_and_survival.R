@@ -66,16 +66,16 @@ make_forest_plot <- function(data, signatures, surv_obj = NULL, time = NULL, eve
         geom_pointrange(aes(color = color), shape = 15, size = 1) +
         geom_hline(yintercept = 1, linetype = "dashed") +
         coord_flip() +
-        scale_y_log10(limits = c(min_HR * 0.8, max_HR * 1.2)) +
+        scale_y_log10(limits = c(0.5 * min_HR, max_HR * 1.2)) +
         scale_color_identity() +
         scale_x_discrete(labels = signatures_labs) +
         # Here's the fixed annotation perfectly at the top, around the OR = 1
-        annotate("text", x = y_top, y = left_x, label = neg_lab, hjust = 1, size = 4) +
-        annotate("text", x = y_top, y = right_x, label = pos_lab, hjust = 0, size = 4) +
+        annotate("text", x = y_top, y = left_x, label = neg_lab, hjust = 1, size = 5) +
+        annotate("text", x = y_top, y = right_x, label = pos_lab, hjust = 0, size = 5) +
         labs(y = ifelse(binary, "Odds Ratio", "Hazard Ratio"), x = "", color = "FDR < 0.05") +
-        theme_bw(base_size = 14) +
+        theme_bw(base_size = 16) +
         ggtitle(title) +
-        theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 16))
+        theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18))
   
   if(return_object){
     df <- results %>% select(signature, estimate, p.value, p.adj)
@@ -167,12 +167,12 @@ make_multi_group_forest_plot <- function(data,
              x = length(signatures) + 0.5,
              y = 1 / 1.15,
              label = neg_lab,
-             hjust = 1, size = 4) +
+             hjust = 1, size = 5) +
     annotate("text",
              x = length(signatures) + 0.5,
              y = 1 * 1.15,
              label = pos_lab,
-             hjust = 0, size = 4) +
+             hjust = 0, size = 5) +
     labs(
       x     = NULL,
       y     = ifelse(binary, "Odds Ratios", "Hazard Ratios"),
@@ -182,9 +182,9 @@ make_multi_group_forest_plot <- function(data,
     color = guide_legend(
       title.position = "top",
       title.hjust     = 0.5)) +
-    theme_classic(base_size = 14) +
+    theme_classic(base_size = 16) +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
       legend.position = "bottom",
       legend.box = "vertical"
     )

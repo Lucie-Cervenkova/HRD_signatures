@@ -1,6 +1,9 @@
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+library(ggtext)
+library(tidyr)
+library(xlsx)
 
 sigs_cols <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "Peng" = "HRD_signature_Peng", "Beinse" =  "HRD_Beinse_scaled", "Zhuang" = "HRD_Zhuang_scaled")
 
@@ -37,9 +40,19 @@ for (sig in names(sigs_cols)) {
       value = .data[[sig]],
       above_tnbc_median = value > sig_median
     )
-  
+
+  p_val <- kruskal.test(value ~ study, data = plot_data)$p.value
+
+  subtitle_text <- if (p_val < 0.001) {
+  "<b>p < 0.001</b>"
+  } else if (p_val >= 0.05) {
+    paste0("p = ", round(p_val, 3))
+  } else {
+    paste0("<b>p = ", round(p_val, 3), "</b>")
+  }
+
   main_color <- "steelblue"
-  
+
   p <- ggplot(plot_data, aes(x = factor(study, levels = c("NeoALTTO", "ALTTO", "CALGB", "TNBC")), y = value)) +
     geom_boxplot(fill = main_color, alpha = 0.5, outlier.shape = NA) +
     geom_jitter(
@@ -54,20 +67,20 @@ for (sig in names(sigs_cols)) {
                                  "TRUE" = main_color)) +
     geom_hline(yintercept = sig_median,
                linetype = "dashed", linewidth = 1, color = "red") +
-    theme_classic(base_size = 14) +
+    theme_classic(base_size = 16) +
     labs(title = sig,
-         y = "Score") +
+         y = "Score",
+         subtitle = subtitle_text) +
     theme(legend.position = "none",
           axis.title.x = element_blank(),
-          plot.title = element_text(hjust = 0.5, face = "bold", size = 16)) +
-    stat_compare_means(label.y = 1.1)
-  
+          plot.title = element_text(hjust = 0.5, face = "bold", size = 18), 
+          plot.subtitle = element_markdown())
   plots[[sig]] <- p
 }
 
-# plots[["Walens"]]
-
 plots <- ggarrange(plotlist = plots, ncol = 3, nrow = 2)
+plots
+
 ggsave(plots, file = "results/figs/HRD/Fig1_cohort_comparisons.pdf", width = 16, height = 10)
 
 
@@ -87,6 +100,7 @@ for (sig in names(sigs_cols)) {
       n_above_tnbc_median = sum(value > sig_median, na.rm = TRUE),
       n_total = n(),
       frac_above_tnbc_median = n_above_tnbc_median / n_total,
+      percent_above_tnbc_median = paste0(n_above_tnbc_median, " (", round(frac_above_tnbc_median * 100, 2), "%)"),
       .groups = "drop"
     ) 
   
@@ -94,4 +108,11 @@ for (sig in names(sigs_cols)) {
 }
 
 counts_df <- bind_rows(counts_list) %>% filter(study != "TNBC")
-write.csv(counts_df, "results/figs/HRD/Fig1_sample_above_TNBC_median.csv", row.names = FALSE)
+
+df <- counts_df %>% select(study, signature, percent_above_tnbc_median) %>%
+  pivot_wider(names_from = "signature", values_from = "percent_above_tnbc_median") %>% as.data.frame()
+rownames(df) <- df$study
+df$study <- NULL
+
+write.csv(df, "results/figs/HRD/Fig1_sample_above_TNBC_median.csv", row.names = TRUE)
+write.xlsx(df, "results/figs/HRD/Fig1_sample_above_TNBC_median.xlsx", row.names = TRUE)

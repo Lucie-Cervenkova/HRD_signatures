@@ -37,33 +37,7 @@ res <- make_forest_plot(
 )$data
 neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
 
-# 2. ER
-res <- make_forest_plot(
-  data = neoaltto,
-  signatures = sigs_HRD,
-  observed_variable = "ER_positive",
-  neg_lab = "ER-",
-  pos_lab = "ER+",    
-  signatures_labs = names(sigs_HRD),
-  binary = TRUE,
-  return_object = TRUE,
-)$data
-neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
-
-# 3. PR
-res <- make_forest_plot(
-  data = neoaltto,
-  signatures = sigs_HRD,
-  observed_variable = "PR_positive",
-  neg_lab = "PR-",
-  pos_lab = "PR+",    
-  signatures_labs = names(sigs_HRD),
-  binary = TRUE,
-  return_object = TRUE,
-)$data
-neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
-
-# 4. Nodes
+# 2. Nodes
 nodes_data <- neoaltto %>% filter(nstage != "NX")
 nodes_data <- nodes_data %>% mutate(node_positive = ifelse(nstage == "N0", 0, 1))
 
@@ -79,7 +53,7 @@ res <- make_forest_plot(
 )$data
 neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
 
-# 5. Grade
+# 3. Grade
 histo_data <- neoaltto %>% filter(!(histograde %in% c("GX","NK")))
 histo_data <- histo_data %>% mutate(grade = ifelse(histograde == "G3", 1, 0))
 
@@ -95,7 +69,7 @@ res <- make_forest_plot(
 )$data
 neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
 
-# 6. Age
+# 4. Age
 neoaltto <- neoaltto %>% mutate(age = ifelse(Age >= 40, 1, 0)) # v2: 40, v1: 50
 table(neoaltto$age)
 
@@ -111,7 +85,7 @@ res <- make_forest_plot(
 )$data
 neoaltto_clin_var <- rbind(neoaltto_clin_var, res)
 
-# 7. Menopause
+# 5. Menopause
 menop_data <- neoaltto %>% filter(menop %in% c("PREMENOPAUSAL", "POSTMENOPAUSAL"))
 menop_data <- menop_data %>% mutate(menopause = ifelse(menop ==  "POSTMENOPAUSAL", 1, 0))
 
@@ -148,35 +122,8 @@ res <- make_forest_plot(
 
 calgb_clin_var <- rbind(calgb_clin_var, res)
 
-# 2. ER
-res <- make_forest_plot(
-  data = calgb,
-  signatures = sigs_HRD,
-  observed_variable = "ER_positive",
-  neg_lab = "ER-",
-  pos_lab = "ER+",
-  signatures_labs = names(sigs_HRD),
-  binary = TRUE, # logistic regression
-    return_object = TRUE
-)$data
 
-calgb_clin_var <- rbind(calgb_clin_var, res)
-
-# 3. PR
-res <- make_forest_plot(
-  data = calgb,
-  signatures = sigs_HRD,
-  observed_variable = "PR_positive",
-  neg_lab = "PR-",
-  pos_lab = "PR+",
-  signatures_labs = names(sigs_HRD),
-  binary = TRUE, # logistic regression
-    return_object = TRUE
-)$data
-
-calgb_clin_var <- rbind(calgb_clin_var, res)
-
-# 4. Nodes
+# 2. Nodes
 nodes_data <- calgb %>% filter(!(Clinical_N_Stage %in% c("NA", NA)))
 nodes_data <- nodes_data %>% mutate(nodes = ifelse(Clinical_N_Stage == "N0", 0, 1))
 
@@ -193,7 +140,7 @@ res <- make_forest_plot(
 
 calgb_clin_var <- rbind(calgb_clin_var, res)
 
-# 5. Age
+# 3. Age
 calgb <- calgb %>% mutate(age = ifelse(Age_on_Study >= 40, 1, 0))
 table(calgb$age)
 
@@ -279,5 +226,5 @@ altto_clin_var$study <- "ALTTO"
 
 clin_var_df <- rbind(neoaltto_clin_var, calgb_clin_var, altto_clin_var)
 View(clin_var_df)
-# write.csv(clin_var_df, "results/figs/HRD/Table2_clinical_variables.csv", row.names = FALSE)
-write.xlsx(clin_var_df, file = "results/figs/HRD/Table2_clinical_variables.xlsx")
+write.csv(clin_var_df, "results/figs/HRD/Table2_clinical_variables.csv", row.names = FALSE)
+write.xlsx(clin_var_df, file = "results/figs/HRD/Table2_clinical_variables.xlsx", sheetName = "Clinical_variables")

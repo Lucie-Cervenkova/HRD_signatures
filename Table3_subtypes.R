@@ -1,6 +1,4 @@
 library(dplyr)
-library(ggplot2)
-library(ggpubr)
 library(xlsx)
 
 sigs_HRD <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "Peng" = "HRD_signature_Peng", "Beinse" =  "HRD_Beinse_scaled", "Zhuang" = "HRD_Zhuang_scaled")
@@ -8,6 +6,10 @@ sigs_HRD <- list("BRCA1ness" = "BRCA1ness", "Walens" = "HRD_signature_Walens", "
 neoaltto <- readRDS("data/HRD_signatures/neoALTTO_meta.rds")
 altto <- readRDS("data/HRD_signatures/ALTTO_meta.rds")
 calgb <- readRDS("data/HRD_signatures/CALGB_meta.rds")
+
+nrow(neoaltto)
+nrow(altto)
+nrow(calgb)
 
 compare_subtypes <- function(df, signatures, group_var, study = NULL) {
   results <- data.frame()

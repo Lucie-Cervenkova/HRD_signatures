@@ -112,7 +112,7 @@ genesets %>% lapply(., length) %>% unlist
 ## 3. CALGB ##
 ##############
 
-## Load data matrix
+# Load data matrix
 # dir <- "/mnt/bctl/mattia_data/CALGB/"
 # txi <- readRDS(paste0(dir, "txi_calgb.RDS"))
 # mtx <- txi$counts # raw counts
